@@ -1,6 +1,6 @@
 import EnvironmentDetector from "../detector/environmentDetector.js";
 import EnvironmentFileManager from "../manager/handlers/EnvironmentFileManager.js";
-import AuthenticationStateManager from "../../auth/storage/authenticationStateManager.js";
+import AuthenticationFileManager from "../../auth/storage/authenticationFileManager.js";
 import ErrorHandler from "../../errorHandling/errorHandler.js";
 
 /**
@@ -31,7 +31,7 @@ async function initializeEnvironmentConfig(): Promise<void> {
  */
 async function initializeEmptyAuthenticationState(): Promise<void> {
   try {
-    await AuthenticationStateManager.initialize();
+    await AuthenticationFileManager.initialize();
   } catch (error) {
     ErrorHandler.captureError(
       error,

@@ -6,7 +6,7 @@ import { FileEncoding } from "../../fileManager/internal/file-encoding.enum.js";
 import ErrorHandler from "../../errorHandling/errorHandler.js";
 import logger from "../../logger/loggerManager.js";
 
-export default class AuthenticationStateManager {
+export default class AuthenticationFileManager {
   private static readonly isCI = EnvironmentDetector.isCI();
   private static isInitialized = false;
 
