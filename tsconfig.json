@@ -1,0 +1,48 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "ES2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["esnext", "dom"],
+
+    /* Interop and Import Behavior */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true,
+
+    /* TypeScript Behavior */
+    "strict": true,
+    "skipLibCheck": true,
+    "noImplicitAny": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Node / Playwright Support */
+    "types": ["node", "@playwright/test"],
+
+    /* Emission & Build */
+    "declaration": false,
+    "noEmit": true,
+    "sourceMap": true,
+
+    /* JS Compatibility */
+    "allowJs": true,
+    "checkJs": false,
+
+    /* Misc */
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts", "fixtures/**/*.ts", "*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "logs",
+    "downloads",
+    "playwright-report",
+    "ortoni-report",
+    "test-results",
+    "src/testData"
+  ]
+}
