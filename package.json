@@ -39,9 +39,9 @@
   },
   "scripts": {
     "prepare": "husky",
-    "type:check": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.js",
-    "check": "npm run type:check && npm run lint"
+    "lint-check": "npm run type-check && npm run lint"
   },
   "repository": {
     "type": "git",
