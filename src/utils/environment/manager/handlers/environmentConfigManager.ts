@@ -58,13 +58,15 @@ export default class EnvironmentConfigManager {
   /**
    * Verifies that the provided credentials contain both a username and password
    */
-  public static verifyCredentials(credentials: Credentials): void {
+  public static verifyCredentials(credentials: Credentials): Credentials {
     if (!credentials.username || !credentials.password) {
       ErrorHandler.logAndThrow(
         "FetchLocalEnvironmentVariables",
         "Invalid credentials: Missing username or password.",
       );
     }
+
+    return credentials;
   }
 
   /**
