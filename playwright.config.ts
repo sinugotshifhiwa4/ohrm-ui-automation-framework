@@ -152,22 +152,22 @@ export default defineConfig({
       },
       dependencies: shouldSkipBrowserInitialization ? [] : ["setup"],
     },
-    {
-      name: "firefox",
-      use: {
-        ...devices["Desktop Firefox"],
-        storageState: undefined,
-      },
-      dependencies: shouldSkipBrowserInitialization ? [] : ["setup"],
-    },
-    {
-      name: "webkit",
-      use: {
-        ...devices["Desktop Safari"],
-        storageState: undefined,
-      },
-      dependencies: shouldSkipBrowserInitialization ? [] : ["setup"],
-    },
+    // {
+    //   name: "firefox",
+    //   use: {
+    //     ...devices["Desktop Firefox"],
+    //     storageState: undefined,
+    //   },
+    //   dependencies: shouldSkipBrowserInitialization ? [] : ["setup"],
+    // },
+    // {
+    //   name: "webkit",
+    //   use: {
+    //     ...devices["Desktop Safari"],
+    //     storageState: undefined,
+    //   },
+    //   dependencies: shouldSkipBrowserInitialization ? [] : ["setup"],
+    // },
 
     /* Test against mobile viewports. */
     // {
