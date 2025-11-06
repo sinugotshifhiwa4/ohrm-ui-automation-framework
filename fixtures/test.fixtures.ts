@@ -11,6 +11,10 @@ import { CryptoService } from "../src/utils/cryptography/service/cryptoService.j
 import { CryptoCoordinator } from "../src/utils/cryptography/service/cryptoCoordinator.js";
 
 import { EnvironmentResolver } from "../src/utils/environment/resolver/environmentResolver.js";
+import { AuthenticationStatePersister } from "../src/utils/auth/state/authenticationStatePersister.js";
+
+import { LoginPage } from "../src/layers/ui/pages/loginPage.js";
+import { LoginOrchestrator } from "../src/utils/auth/state/loginOrchestrator.js";
 
 type TestFixtures = {
   /**
@@ -30,6 +34,10 @@ type TestFixtures = {
   cryptoCoordinator: CryptoCoordinator;
 
   environmentResolver: EnvironmentResolver;
+  authenticationStatePersister: AuthenticationStatePersister;
+
+  loginPage: LoginPage;
+  loginOrchestrator: LoginOrchestrator;
 };
 
 export const test = baseTest.extend<TestFixtures>({
@@ -55,6 +63,22 @@ export const test = baseTest.extend<TestFixtures>({
   environmentResolver: async ({}, use) => {
     await use(new EnvironmentResolver());
   },
+
+  authenticationStatePersister: async ({ page }, use) => {
+    await use(new AuthenticationStatePersister(page));
+  },
+  loginPage: async ({ page }, use) => {
+    await use(new LoginPage(page));
+  },
+  loginOrchestrator: async (
+    { page, environmentResolver, authenticationStatePersister, loginPage },
+    use,
+  ) => {
+    await use(
+      new LoginOrchestrator(page, environmentResolver, authenticationStatePersister, loginPage),
+    );
+  },
+
   /**
    * Provides the storage state file path for browser authentication persistence.
    *
