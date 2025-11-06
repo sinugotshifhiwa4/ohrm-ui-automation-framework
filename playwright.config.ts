@@ -1,18 +1,57 @@
 import { defineConfig, devices } from "@playwright/test";
+import EnvironmentDetector from "./src/utils/environment/detector/environmentDetector.js";
+import WorkerAllocator from "./src/utils/allocator/workerAllocator.js";
+import { TIMEOUTS } from "./src/utils/timeouts/timeout.config.js";
+import { shouldSkipBrowserInit } from "./src/utils/shared/skipBrowserInitFlag.js";
+import type { OrtoniReportConfig } from "ortoni-report";
+import * as os from "os";
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
+ * Checks if the current execution is running in a Continuous Integration (CI) environment.
  */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+const isCI = EnvironmentDetector.isCI();
+
+/**
+ * Determines whether browser initialization should be skipped.
+ *
+ * Controlled by the environment variable `SKIP_BROWSER_INIT`, typically used
+ * when running encryption or API-only tests.
+ *
+ * @returns {boolean} True if browser initialization should be skipped.
+ */
+const shouldSkipBrowserInitialization = shouldSkipBrowserInit();
+
+/**
+ * Configuration for the Ortoni report.
+ */
+const reportConfig: OrtoniReportConfig = {
+  open: process.env.CI ? "never" : "always",
+  folderPath: "ortoni-report",
+  filename: "index.html",
+  title: "OrangeHRM UI Automation Framework",
+  showProject: false,
+  projectName: "ohrm-ui-automation-framework",
+  testType: process.env.PLAYWRIGHT_GREP?.replace(/[\/@]/g, "") || "e2e",
+  authorName: os.userInfo().username,
+  base64Image: false,
+  stdIO: false,
+  meta: {
+    description:
+      "Automation framework for validating core UI features and workflows of the OrangeHRM demo application",
+    platform: os.type(),
+  },
+};
 
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
   testDir: "./tests",
+  globalSetup: "src/utils/environment/global/globalSetup.ts",
+  timeout: TIMEOUTS.test,
+  expect: {
+    timeout: TIMEOUTS.expect,
+  },
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -20,33 +59,114 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : 2,
+  workers: WorkerAllocator.getOptimalWorkerCount("10-percent"),
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: "html",
+
+  /**
+   * Configures Playwright reporters and test filtering behavior.
+   *
+   * - In CI environments: generates only a blob report for aggregation and uploads.
+   * - In local runs: generates multiple reports (HTML, Ortoni, and dot) for easier debugging and visualization.
+   *
+   * The `grep` option enables running tests by tag or keyword.
+   * You can set the `PLAYWRIGHT_GREP` environment variable (e.g., `@regression`, `@sanity`) to filter which tests run.
+   */
+  reporter: isCI
+    ? [["blob", { outputDir: "blob-report", alwaysReport: true }]]
+    : [["html", { open: "never" }], ["ortoni-report", reportConfig], ["dot"]],
+  grep:
+    typeof process.env.PLAYWRIGHT_GREP === "string"
+      ? new RegExp(process.env.PLAYWRIGHT_GREP)
+      : process.env.PLAYWRIGHT_GREP || /.*/,
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Base URL to use in actions like `await page.goto('')`. */
-    // baseURL: 'http://localhost:3000',
+    /**
+     * Test artifacts & browser mode.
+     * - In CI: optimize for performance and smaller artifacts.
+     * - In local dev: maximize visibility for debugging.
+     */
+    trace: "retain-on-failure",
+    video: "retain-on-failure",
+    screenshot: "on",
+    headless: isCI ? true : false,
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: "on-first-retry",
+    /**
+     * Test artifacts & browser mode.
+     * - In CI: optimize for performance and smaller artifacts.
+     * - In local dev: maximize visibility for debugging.
+     */
+    launchOptions: {
+      args: isCI
+        ? [
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--enable-features=VaapiVideoDecoder",
+            "--enable-gpu-rasterization",
+            "--enable-zero-copy",
+            "--ignore-gpu-blocklist",
+            "--use-gl=egl",
+            "--disable-background-timer-throttling",
+            "--disable-backgrounding-occluded-windows",
+            "--disable-renderer-backgrounding",
+            "--disable-extensions",
+            "--disable-plugins",
+            "--no-first-run",
+            "--disable-default-apps",
+            "--disable-translate",
+          ]
+        : [],
+    },
   },
 
   /* Configure projects for major browsers */
   projects: [
+    /**
+     * Defines the list of Playwright projects used for test execution.
+     *
+     * - The optional `setup` project initializes the authentication state before other projects run,
+     *   unless browser initialization is explicitly skipped.
+     * - Each browser project (`chromium`, `firefox`, `webkit`) reuses the authentication state
+     *   provided by the `storageState` fixture, which dynamically resolves the correct state path
+     *   through `AuthenticationFileManager` and related auth utilities.
+     * - The `dependencies` property ensures that all browser projects wait for the `setup` project
+     *   to complete before starting.
+     *
+     * When the environment variable `SKIP_BROWSER_INIT=true` is set, the `shouldSkipBrowserInitialization`
+     * flag disables the authentication setup process entirely. This allows running non-UI or backend tests
+     * (e.g. encryption) without performing a login or launching browser sessions.
+     */
+    ...(!shouldSkipBrowserInitialization
+      ? [
+          {
+            name: "setup",
+            use: { ...devices["Desktop Chrome"] },
+            testMatch: /.*\.setup\.ts/,
+          },
+        ]
+      : []),
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: undefined,
+      },
+      dependencies: shouldSkipBrowserInitialization ? [] : ["setup"],
     },
-
     {
       name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
+      use: {
+        ...devices["Desktop Firefox"],
+        storageState: undefined,
+      },
+      dependencies: shouldSkipBrowserInitialization ? [] : ["setup"],
     },
-
     {
       name: "webkit",
-      use: { ...devices["Desktop Safari"] },
+      use: {
+        ...devices["Desktop Safari"],
+        storageState: undefined,
+      },
+      dependencies: shouldSkipBrowserInitialization ? [] : ["setup"],
     },
 
     /* Test against mobile viewports. */
