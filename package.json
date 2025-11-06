@@ -41,7 +41,9 @@
     "prepare": "husky",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.js",
-    "lint-check": "npm run type-check && npm run lint"
+    "lint-check": "npm run type-check && npm run lint",
+    "pretest:cryptography": "npm run lint-check",
+    "test:cryptography": "npx playwright test tests/cryptography"
   },
   "repository": {
     "type": "git",
