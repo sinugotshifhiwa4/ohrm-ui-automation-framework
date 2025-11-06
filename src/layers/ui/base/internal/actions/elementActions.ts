@@ -21,8 +21,8 @@ export class ElementActions extends ActionBase {
    */
   async fillElement(
     element: Locator,
-    value: string,
     callerMethodName: string,
+    value: string,
     elementName?: string,
     options?: { force?: boolean },
   ) {
