@@ -25,7 +25,8 @@
     "Ortoni",
     "uncolorize",
     "Encryptor ",
-    "OHRM"
+    "OHRM",
+    "VaapiVideoDecoder"
   ],
   "cSpell.ignorePaths": [
     "node_modules/**",
