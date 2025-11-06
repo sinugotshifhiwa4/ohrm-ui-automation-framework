@@ -73,7 +73,8 @@ export default defineConfig({
    */
   reporter: isCI
     ? [["blob", { outputDir: "blob-report", alwaysReport: true }]]
-    : [["html", { open: "never" }], ["ortoni-report", reportConfig], ["dot"]],
+    : [["html", { open: "never" }], ["ortoni-report", reportConfig], ["line"]],
+
   grep:
     typeof process.env.PLAYWRIGHT_GREP === "string"
       ? new RegExp(process.env.PLAYWRIGHT_GREP)

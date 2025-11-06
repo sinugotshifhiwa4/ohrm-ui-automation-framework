@@ -14,6 +14,7 @@ import { EnvironmentResolver } from "../src/utils/environment/resolver/environme
 import { AuthenticationStatePersister } from "../src/utils/auth/state/authenticationStatePersister.js";
 
 import { LoginPage } from "../src/layers/ui/pages/loginPage.js";
+import { SideBarMenu } from "../src/layers/ui/pages/sideBarMenu.js";
 import { LoginOrchestrator } from "../src/utils/auth/state/loginOrchestrator.js";
 
 type TestFixtures = {
@@ -37,6 +38,7 @@ type TestFixtures = {
   authenticationStatePersister: AuthenticationStatePersister;
 
   loginPage: LoginPage;
+  sideBarMenu: SideBarMenu;
   loginOrchestrator: LoginOrchestrator;
 };
 
@@ -70,12 +72,21 @@ export const test = baseTest.extend<TestFixtures>({
   loginPage: async ({ page }, use) => {
     await use(new LoginPage(page));
   },
+  sideBarMenu: async ({ page }, use) => {
+    await use(new SideBarMenu(page));
+  },
   loginOrchestrator: async (
-    { page, environmentResolver, authenticationStatePersister, loginPage },
+    { page, environmentResolver, authenticationStatePersister, loginPage, sideBarMenu },
     use,
   ) => {
     await use(
-      new LoginOrchestrator(page, environmentResolver, authenticationStatePersister, loginPage),
+      new LoginOrchestrator(
+        page,
+        environmentResolver,
+        authenticationStatePersister,
+        loginPage,
+        sideBarMenu,
+      ),
     );
   },
 
