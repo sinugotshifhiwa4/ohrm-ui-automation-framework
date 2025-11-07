@@ -9,6 +9,9 @@ export class SideBarMenu extends BasePage {
   private readonly leaveMenu: Locator;
   private readonly myInfoMenu: Locator;
 
+  private readonly collapseSideMenuButton: Locator;
+  private readonly expandSideMenuButton: Locator;
+
   constructor(page: Page) {
     super(page);
     this.banner = page.getByRole("link", { name: "client brand banner" });
@@ -17,6 +20,14 @@ export class SideBarMenu extends BasePage {
     this.pimMenu = page.getByRole("link", { name: "PIM" });
     this.leaveMenu = page.getByRole("link", { name: "Leave" });
     this.myInfoMenu = page.getByRole("link", { name: "My Info" });
+
+    this.collapseSideMenuButton = page
+      .locator("div.oxd-main-menu-search button")
+      .filter({ has: page.locator("i.oxd-icon.bi-chevron-left") });
+
+    this.expandSideMenuButton = page
+      .locator("div.oxd-main-menu-search button")
+      .filter({ has: page.locator("i.oxd-icon.bi-chevron-right") });
   }
 
   // Assertions
