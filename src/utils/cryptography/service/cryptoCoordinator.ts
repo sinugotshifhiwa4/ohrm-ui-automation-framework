@@ -83,6 +83,10 @@ export class CryptoCoordinator {
     }
   }
 
+  public async getSecretKeyName(): Promise<string> {
+    return EnvironmentConfigManager.getCurrentEnvSecretKey();
+  }
+
   /**
    * Encrypts environment variables specified by `envVariables` using the current secret key.
    * Before encrypting, checks if the secret key is valid and not expired.
