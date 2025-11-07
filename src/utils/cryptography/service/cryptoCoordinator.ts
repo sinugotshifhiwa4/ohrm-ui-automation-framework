@@ -1,6 +1,7 @@
 import EnvironmentDetector from "../../environment/detector/environmentDetector.js";
 import SecureKeyGenerator from "../key/secureKeyGenerator.js";
-import { EnvironmentFileEncryptor } from "../manager/environmentFileEncryptor.js";
+//import { EnvironmentFileEncryptor } from "../manager/environmentFileEncryptor.js";
+import { EnvironmentFileEncryptor } from "../manager/encryptor/environmentFileEncryptor.js";
 import EnvironmentConfigManager from "../../environment/manager/handlers/environmentConfigManager.js";
 import SecretFileManager from "../../environment/manager/handlers/secretFileManager.js";
 import SecretMetadataManager from "../../cryptography/rotation/manager/secretMetadataManager.js";

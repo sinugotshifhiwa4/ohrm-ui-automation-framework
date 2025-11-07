@@ -5,7 +5,11 @@ import { AsyncFileManager } from "../src/utils/fileManager/asyncFileManager.js";
 import AuthenticationFileManager from "../src/utils/auth/storage/authenticationFileManager.js";
 import AuthenticationFilter from "../src/utils/auth/authenticationFilter.js";
 
-import { EnvironmentFileEncryptor } from "../src/utils/cryptography/manager/environmentFileEncryptor.js";
+//import { EnvironmentFileEncryptor } from "../src/utils/cryptography/manager/environmentFileEncryptor.js";
+import { EncryptionVariableResolver } from "../src/utils/cryptography/manager/encryptor/internal/encryptionVariableResolver.js";
+import { VariableEncryptionExecutor } from "../src/utils/cryptography/manager/encryptor/internal/variableEncryptionExecutor.js";
+import { EncryptionOperationLogger } from "../src/utils/cryptography/manager/encryptor/internal/encryptionOperationLogger.js";
+import { EnvironmentFileEncryptor } from "../src/utils/cryptography/manager/encryptor/environmentFileEncryptor.js";
 import { CryptoService } from "../src/utils/cryptography/service/cryptoService.js";
 import { CryptoCoordinator } from "../src/utils/cryptography/service/cryptoCoordinator.js";
 
@@ -23,6 +27,9 @@ type TestFixtures = {
   testInfo: TestInfo;
 
   // Crypto
+  encryptionVariableResolver: EncryptionVariableResolver;
+  variableEncryptionExecutor: VariableEncryptionExecutor;
+  encryptionOperationLogger: EncryptionOperationLogger;
   environmentFileEncryptor: EnvironmentFileEncryptor;
   cryptoService: CryptoService;
   cryptoCoordinator: CryptoCoordinator;
@@ -37,8 +44,26 @@ export const test = baseTest.extend<TestFixtures>({
   },
 
   // Crypto
-  environmentFileEncryptor: async ({}, use) => {
-    await use(new EnvironmentFileEncryptor());
+  encryptionVariableResolver: async ({}, use) => {
+    await use(new EncryptionVariableResolver());
+  },
+  variableEncryptionExecutor: async ({}, use) => {
+    await use(new VariableEncryptionExecutor());
+  },
+  encryptionOperationLogger: async ({}, use) => {
+    await use(new EncryptionOperationLogger());
+  },
+  environmentFileEncryptor: async (
+    { encryptionVariableResolver, variableEncryptionExecutor, encryptionOperationLogger },
+    use,
+  ) => {
+    await use(
+      new EnvironmentFileEncryptor(
+        encryptionVariableResolver,
+        variableEncryptionExecutor,
+        encryptionOperationLogger,
+      ),
+    );
   },
   cryptoService: async ({}, use) => {
     await use(new CryptoService());
