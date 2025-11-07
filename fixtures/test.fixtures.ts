@@ -6,7 +6,6 @@ import AuthenticationFileManager from "../src/utils/auth/storage/authenticationF
 import AuthenticationFilter from "../src/utils/auth/authenticationFilter.js";
 
 import { EnvironmentFileEncryptor } from "../src/utils/cryptography/manager/environmentFileEncryptor.js";
-import { CryptoEngine } from "../src/utils/cryptography/engine/cryptoEngine.js";
 import { CryptoService } from "../src/utils/cryptography/service/cryptoService.js";
 import { CryptoCoordinator } from "../src/utils/cryptography/service/cryptoCoordinator.js";
 
@@ -25,7 +24,6 @@ type TestFixtures = {
 
   // Crypto
   environmentFileEncryptor: EnvironmentFileEncryptor;
-  cryptoEngine: CryptoEngine;
   cryptoService: CryptoService;
   cryptoCoordinator: CryptoCoordinator;
 
@@ -41,9 +39,6 @@ export const test = baseTest.extend<TestFixtures>({
   // Crypto
   environmentFileEncryptor: async ({}, use) => {
     await use(new EnvironmentFileEncryptor());
-  },
-  cryptoEngine: async ({}, use) => {
-    await use(new CryptoEngine());
   },
   cryptoService: async ({}, use) => {
     await use(new CryptoService());
