@@ -1,27 +1,7 @@
-// export interface ErrorDetails {
-//   source: string;
-//   context: string;
-//   message: string;
-//   url?: string;
-//   details?: Record<string, unknown>;
-//   timestamp: string;
-//   environment: string;
-//   stack?: string;
-//   errorType?: string;
-// }
-
-// export type MatcherResult = {
-//   expected?: unknown;
-//   actual?: unknown;
-//   received?: unknown;
-//   message: string;
-//   pass: boolean;
-// };
-
-// export type MatcherError = {
-//   matcherResult: MatcherResult;
-// };
-
+/**
+ * Comprehensive error information captured during test execution or runtime failures.
+ * Contains contextual metadata, stack traces, and optional test matcher details for debugging.
+ */
 export interface ErrorDetails {
   source: string;
   context: string;
@@ -38,6 +18,10 @@ export interface ErrorDetails {
   [key: string]: unknown;
 }
 
+/**
+ * Result object returned by test matcher functions indicating whether an assertion
+ * passed or failed, along with relevant values and diagnostic information.
+ */
 export type MatcherResult = {
   message: string;
   pass: boolean;
@@ -48,6 +32,10 @@ export type MatcherResult = {
   log?: string[];
 };
 
+/**
+ * Wrapper object for matcher failures, used to distinguish test assertion errors
+ * from other runtime errors in test frameworks.
+ */
 export type MatcherError = {
   matcherResult: MatcherResult;
 };
