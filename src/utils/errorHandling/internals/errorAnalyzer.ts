@@ -1,50 +1,26 @@
 import DataSanitizer from "../../sanitization/dataSanitizer.js";
 import { ErrorCacheManager } from "./errorCacheManager.js";
-import { RegexPatterns } from "./regexPatterns.js";
-import type { ErrorDetails, MatcherResult, MatcherError } from "./error-handler.types.js";
+import type { ErrorDetails, MatcherResult, MatcherError } from "../type/error-handler.types.js";
 
 export default class ErrorAnalyzer {
   private static readonly MESSAGE_PROPS = ["message"];
-  private static readonly MEANINGLESS_PROPS = new Set([
-    "name",
-    "stack",
-    "constructor",
-    "toString",
-    "valueOf",
-  ]);
 
   public static createErrorDetails(error: unknown, source: string, context = ""): ErrorDetails {
     if (!error) {
       return this.createEmptyErrorDetails(source, context);
     }
 
+    const message = this.getErrorMessage(error);
+    const additionalDetails = this.isErrorObject(error) ? this.extractAllErrorDetails(error) : {};
+
     const details: ErrorDetails = {
       source,
       context,
-      message: this.getErrorMessage(error),
+      message,
       timestamp: new Date().toISOString(),
       environment: process.env.ENV || "dev",
+      ...additionalDetails, // Includes stack, errorType, and any additional props
     };
-
-    // Add stack trace to main error details
-    if (error instanceof Error && error.stack) {
-      details.stack = error.stack;
-    } else if (this.isErrorObject(error) && "stack" in error) {
-      const stack = error.stack;
-      if (typeof stack === "string") {
-        details.stack = stack;
-      }
-    }
-
-    // Add error name/type
-    if (error instanceof Error) {
-      details.errorType = error.constructor.name;
-    } else if (this.isErrorObject(error) && "name" in error) {
-      const name = error.name;
-      if (typeof name === "string") {
-        details.errorType = name;
-      }
-    }
 
     return details;
   }
@@ -67,121 +43,81 @@ export default class ErrorAnalyzer {
     return String(error);
   }
 
-  public static extractAdditionalErrorDetails(error: unknown): Record<string, unknown> {
-    if (!this.isErrorObject(error)) return {};
-
-    // Start with base details
+  private static extractAllErrorDetails(error: Record<string, unknown>): Record<string, unknown> {
     const details: Record<string, unknown> = {};
 
-    // Check for matcher error first
+    // Extract stack trace
+    const stack = this.getStackTrace(error);
+    if (stack) details.stack = stack;
+
+    // Extract error type/name
+    const errorType = this.getErrorType(error);
+    if (errorType) details.errorType = errorType;
+
+    // Check for matcher error (Playwright/Jest)
     if (this.isMatcherError(error)) {
       Object.assign(details, this.extractMatcherDetails(error.matcherResult));
     }
 
-    // Check for Jest matcher details
-    const matcherDetails = this.extractJestMatcherDetails(error);
-    if (Object.keys(matcherDetails).length > 0) {
-      Object.assign(details, matcherDetails);
-    }
+    // Use DataSanitizer to get all other properties
+    const sanitizedError = DataSanitizer.sanitizeErrorObject(error);
 
-    // Add Playwright-specific details
-    const playwrightDetails = this.extractPlaywrightDetails(error);
-    if (Object.keys(playwrightDetails).length > 0) {
-      Object.assign(details, playwrightDetails);
-    }
-
-    // Get sanitized error object
-    const sanitizedDetails = DataSanitizer.sanitizeErrorObject(error);
-    const filtered = this.filterMeaninglessProperties(sanitizedDetails);
-
-    // Merge without overwriting existing details
-    for (const [key, value] of Object.entries(filtered)) {
-      if (!(key in details)) {
-        details[key] = value;
+    // Merge sanitized properties, avoiding duplicates
+    for (const [key, value] of Object.entries(sanitizedError)) {
+      // Skip if already extracted or meaningless
+      if (
+        key in details ||
+        key === "name" ||
+        key === "stack" ||
+        key === "message" ||
+        key === "constructor" ||
+        value == null
+      ) {
+        continue;
       }
+      details[key] = value;
     }
 
     return details;
   }
 
-  private static extractPlaywrightDetails(error: Record<string, unknown>): Record<string, unknown> {
-    const details: Record<string, unknown> = {};
-
-    // Common Playwright error properties
-    const playwrightProps = [
-      "timeout",
-      "selector",
-      "locator",
-      "frame",
-      "page",
-      "action",
-      "retries",
-      "logs",
-    ] as const;
-
-    for (const prop of playwrightProps) {
-      if (prop in error && error[prop] !== undefined) {
-        details[prop] = error[prop];
-      }
+  private static getStackTrace(error: Record<string, unknown>): string | undefined {
+    if ("stack" in error && typeof error.stack === "string") {
+      return error.stack.substring(0, 2000);
     }
-
-    return details;
+    return undefined;
   }
 
-  private static extractJestMatcherDetails(
-    error: Record<string, unknown>,
-  ): Record<string, unknown> {
-    const details: Record<string, unknown> = {};
+  private static getErrorType(error: Record<string, unknown>): string | undefined {
+    // Check if it's an Error instance
+    if (error instanceof Error) {
+      return error.constructor.name;
+    }
 
-    const { expected, actual, received, matcherName, pass, diff, operator } = error;
+    // Check for name property
+    if ("name" in error && typeof error.name === "string" && error.name !== "Error") {
+      return error.name;
+    }
 
-    if (expected !== undefined) details.expected = expected;
-    if (actual !== undefined) details.received = actual;
-    else if (received !== undefined) details.received = received;
-    if (matcherName !== undefined) details.matcher = matcherName;
-    if (typeof pass === "boolean") details.pass = pass;
-    if (diff !== undefined) details.diff = diff;
-    if (operator !== undefined) details.operator = operator;
-
-    // Return only if we found meaningful details
-    return expected !== undefined ||
-      actual !== undefined ||
-      received !== undefined ||
-      operator !== undefined
-      ? details
-      : {};
+    return undefined;
   }
 
   private static extractMatcherDetails(matcher: MatcherResult): Record<string, unknown> {
-    const details: Record<string, unknown> = { pass: matcher.pass };
-    const parsedValues = this.parsePlaywrightMessage(matcher.message);
+    const details: Record<string, unknown> = {
+      pass: matcher.pass,
+    };
 
-    if (parsedValues.expected !== undefined) details.expected = parsedValues.expected;
-    if (parsedValues.received !== undefined) details.received = parsedValues.received;
+    if (matcher.name) details.matcherName = matcher.name;
+    if (matcher.expected !== undefined) details.expected = matcher.expected;
+    if (matcher.actual !== undefined) details.received = matcher.actual;
+    else if (matcher.received !== undefined) details.received = matcher.received;
 
-    details.message = ErrorCacheManager.getSanitizedMessage(matcher.message);
-
-    // Include full original message for debugging
-    details.fullMessage = matcher.message;
+    // Include log if present (Playwright)
+    if ("log" in matcher && Array.isArray(matcher.log)) {
+      details.log = matcher.log;
+    }
 
     return details;
-  }
-
-  private static parsePlaywrightMessage(message: string): { expected?: string; received?: string } {
-    const cleanMessage = message.replace(RegexPatterns.ANSI_ESCAPE, "");
-    const result: { expected?: string; received?: string } = {};
-
-    const expectedMatch = cleanMessage.match(RegexPatterns.EXPECTED_MATCH);
-    if (expectedMatch) {
-      result.expected = (expectedMatch[1] || expectedMatch[2] || expectedMatch[3])?.trim() || "";
-    }
-
-    const receivedMatch = cleanMessage.match(RegexPatterns.RECEIVED_MATCH);
-    if (receivedMatch) {
-      result.received = (receivedMatch[1] || receivedMatch[2] || receivedMatch[3])?.trim() || "";
-    }
-
-    return result;
   }
 
   private static isMatcherError(error: unknown): error is MatcherError {
@@ -216,25 +152,6 @@ export default class ErrorAnalyzer {
       timestamp: new Date().toISOString(),
       environment: process.env.ENV || "dev",
     };
-  }
-
-  private static filterMeaninglessProperties(
-    details: Record<string, unknown>,
-  ): Record<string, unknown> {
-    const filtered: Record<string, unknown> = {};
-
-    for (const [key, value] of Object.entries(details)) {
-      if (
-        this.MEANINGLESS_PROPS.has(key) ||
-        (key === "name" && value === "Error") ||
-        value == null
-      ) {
-        continue;
-      }
-      filtered[key] = value;
-    }
-
-    return filtered;
   }
 
   private static isErrorObject(error: unknown): error is Record<string, unknown> {
