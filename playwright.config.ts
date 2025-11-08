@@ -3,8 +3,6 @@ import EnvironmentDetector from "./src/utils/environment/detector/environmentDet
 import WorkerAllocator from "./src/utils/allocator/workerAllocator.js";
 import { TIMEOUTS } from "./src/utils/timeouts/timeout.config.js";
 import { shouldSkipBrowserInit } from "./src/utils/shared/skipBrowserInitFlag.js";
-import type { OrtoniReportConfig } from "ortoni-report";
-import * as os from "os";
 
 /**
  * Checks if the current execution is running in a Continuous Integration (CI) environment.
@@ -20,27 +18,6 @@ const isCI = EnvironmentDetector.isCI();
  * @returns {boolean} True if browser initialization should be skipped.
  */
 const shouldSkipBrowserInitialization = shouldSkipBrowserInit();
-
-/**
- * Configuration for the Ortoni report.
- */
-const reportConfig: OrtoniReportConfig = {
-  open: process.env.CI ? "never" : "always",
-  folderPath: "ortoni-report",
-  filename: "index.html",
-  title: "OrangeHRM UI Automation Framework",
-  showProject: false,
-  projectName: "ohrm-ui-automation-framework",
-  testType: process.env.PLAYWRIGHT_GREP?.replace(/[\/@]/g, "") || "e2e",
-  authorName: os.userInfo().username,
-  base64Image: false,
-  stdIO: false,
-  meta: {
-    description:
-      "Automation framework for validating core UI features and workflows of the OrangeHRM demo application",
-    platform: os.type(),
-  },
-};
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -73,7 +50,7 @@ export default defineConfig({
    */
   reporter: isCI
     ? [["blob", { outputDir: "blob-report", alwaysReport: true }]]
-    : [["html", { open: "never" }], ["ortoni-report", reportConfig], ["dot"]],
+    : [["html", { open: "never" }], ["dot"]],
   grep:
     typeof process.env.PLAYWRIGHT_GREP === "string"
       ? new RegExp(process.env.PLAYWRIGHT_GREP)
