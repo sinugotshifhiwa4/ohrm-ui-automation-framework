@@ -60,6 +60,7 @@ export interface EncryptionResult {
 
 export interface EncryptionFormat {
   PREFIX: string;
+  VERSION: string;
   SEPARATOR: string;
   EXPECTED_PARTS: number;
   PREFIX_LENGTH: number;

@@ -2,19 +2,26 @@
   "dependencies": {
     "@faker-js/faker": "^10.1.0",
     "argon2": "^0.44.0",
+    "boxen": "^8.0.1",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
     "cross-env": "^10.1.0",
     "dotenv": "^17.2.3",
+    "execa": "^9.6.0",
+    "figlet": "^1.9.3",
     "moment-timezone": "^0.6.0",
+    "ora": "^9.0.0",
     "pdf-parse": "^2.4.5",
     "playwright": "^1.56.1",
     "winston": "^3.18.3"
   },
-  "name": "ohrm-ui-automation-framework",
-  "version": "1.0.0",
+  "name": "@tshifhiwa/ohrm-ui-automation-framework",
+  "version": "1.0.2",
   "description": "Playwright and TypeScript–based test automation framework for validating core UI features and workflows of the OrangeHRM demo application.",
   "main": "index.js",
   "devDependencies": {
     "@playwright/test": "^1.56.1",
+    "@types/figlet": "^1.7.0",
     "@types/node": "^24.9.2",
     "cspell": "^9.2.2",
     "eslint": "^9.38.0",
@@ -23,10 +30,15 @@
     "eslint-plugin-prettier": "^5.5.4",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.6",
-    "ortoni-report": "^4.0.1",
     "prettier": "^3.6.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2"
+  },
+  "bin": {
+    "pae": "./dist/cli/pae-cli.js"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "lint-staged": {
     "*.{ts,js}": [
@@ -44,8 +56,9 @@
     "lint-check": "npm run type-check && npm run lint",
     "pretest:cryptography": "npm run lint-check",
     "test:cryptography": "npx playwright test tests/cryptography",
-    "pretest:ui": "npm run lint-check",
-    "test:ui": "npx playwright test tests/ui"
+    "build:cli": "tsc -p tsconfig.build.json",
+    "start:cli": "node dist/cli/pae-cli.js",
+    "pae": "./dist/cli/pae-cli.js"
   },
   "repository": {
     "type": "git",

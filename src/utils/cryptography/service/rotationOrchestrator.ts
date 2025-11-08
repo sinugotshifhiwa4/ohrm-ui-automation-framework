@@ -1,8 +1,9 @@
 import EnvironmentDetector from "../../environment/detector/environmentDetector.js";
 import SecretFileManager from "../rotation/manager/secretFileManager.js";
 import EnvironmentConfigManager from "../../environment/manager/handlers/environmentConfigManager.js";
-import SecretMetadataManager from "../rotation/manager/secretMetadataManager.js";
 import SecretKeyRotationManager from "../rotation/manager/secretKeyRotationManager.js";
+import SecretMetadataManager from "../rotation/manager/secretMetadataManager.js";
+import SecretAuditManager from "../rotation/manager/secretAuditManager.js";
 import SystemInfo from "../../shared/systemInfo.js";
 import CryptoConstants from "../rotation/types/cryptoConstants.js";
 import type {
@@ -40,24 +41,28 @@ export default class RotationOrchestrator {
 
     try {
       // Step 1: Validate rotation is needed
-      await SecretKeyRotationManager.validateRotationNecessary(currentEnvKey, forceRotation);
+      await SecretKeyRotationManager.Validator.validateRotationNecessary(
+        currentEnvKey,
+        forceRotation,
+      );
 
       // Step 2: Get old key before rotation
-      const oldKey = await SecretKeyRotationManager.getOldSecretKey(currentEnvKey);
-      const oldKeyHash = SecretKeyRotationManager.hashKey(oldKey);
+      const oldKey = await SecretKeyRotationManager.Secret.getOldSecretKey(currentEnvKey);
+      const oldKeyHash = SecretKeyRotationManager.Secret.hashKey(oldKey);
 
       // Step 3: Decrypt all encrypted variables with old key
-      const decryptedVariables = await SecretKeyRotationManager.decryptAllEnvironmentVariables(
-        filePath,
-        currentEnvKey,
-        oldKey,
-      );
+      const decryptedVariables =
+        await SecretKeyRotationManager.Crypto.decryptAllEnvironmentVariables(
+          filePath,
+          currentEnvKey,
+          oldKey,
+        );
 
       if (dryRun) {
         logger.info(
           `[DRY RUN] Would decrypt and re-encrypt ${decryptedVariables.filter((v) => v.wasEncrypted).length} variables`,
         );
-        return SecretKeyRotationManager.createDryRunResult(
+        return SecretKeyRotationManager.Validator.createDryRunResult(
           currentEnvKey,
           currentEnv,
           decryptedVariables,
@@ -66,15 +71,15 @@ export default class RotationOrchestrator {
       }
 
       // Step 4: Generate new key
-      const newKey = await SecretKeyRotationManager.generateNewSecretKey();
-      const newKeyHash = SecretKeyRotationManager.hashKey(newKey);
+      const newKey = await SecretKeyRotationManager.Secret.generateNewSecretKey();
+      const newKeyHash = SecretKeyRotationManager.Secret.hashKey(newKey);
 
       // Step 5: Store new key
-      await SecretKeyRotationManager.storeNewSecretKey(currentEnvKey, newKey);
+      await SecretKeyRotationManager.Secret.storeNewSecretKey(currentEnvKey, newKey);
 
       // Step 6: Re-encrypt all variables with new key
       const { variablesProcessed, variablesFailed } =
-        await SecretKeyRotationManager.reEncryptAllVariables(
+        await SecretKeyRotationManager.Crypto.reEncryptAllVariables(
           filePath,
           decryptedVariables,
           currentEnvKey,
@@ -207,7 +212,8 @@ export default class RotationOrchestrator {
       const metadata = await SecretMetadataManager.getKeyMetadata(currentEnvKey);
 
       // Count encrypted variables
-      const encryptedCount = await SecretKeyRotationManager.countEncryptedVariables(filePath);
+      const encryptedCount =
+        await SecretKeyRotationManager.Crypto.countEncryptedVariables(filePath);
 
       let recommendation = "";
       if (rotationStatus.needsRotation) {
@@ -245,7 +251,7 @@ export default class RotationOrchestrator {
    */
   public static async auditAllSecretKeys(): Promise<void> {
     try {
-      await SecretKeyRotationManager.auditAllSecretKeys();
+      await SecretAuditManager.auditAllSecretKeys();
     } catch (error) {
       ErrorHandler.captureError(error, "auditAllSecretKeys", "Failed to audit secret keys");
       throw error;
