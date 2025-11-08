@@ -40,6 +40,7 @@ export const CRYPTO_CONFIG: CryptoConfig = {
 export const CRYPTO_CONSTANTS = {
   FORMAT: {
     PREFIX: "ENC2:",
+    VERSION: "v1",
     SEPARATOR: ":",
     EXPECTED_PARTS: 4,
     PREFIX_LENGTH: 4,

@@ -11,7 +11,7 @@ test.describe("Login Test Suite @regression @sanity", () => {
   });
 
   test("should display error for invalid credentials", async ({ loginOrchestrator }) => {
-    await loginOrchestrator.loginToPortal("General-user", "Password@123", { saveAuthenticationState: false });
+    await loginOrchestrator.loginToPortal("Admin", "admin123", { saveAuthenticationState: false });
     logger.info("Verified: Login failed");
   });
 });

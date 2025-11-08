@@ -1,25 +1,30 @@
-import { CryptoEngine } from "../engine/cryptoEngine.js";
+import CryptoEngineFacade from "../engine/cryptoEngineFacade.js";
 import ErrorHandler from "../../errorHandling/errorHandler.js";
 
 export class CryptoService {
-  /**
-   * Main encrypt method using Web Crypto API throughout
-   * All key handling is now consistent with Web Crypto standards
-   */
   public static async encrypt(value: string, secretKeyVariable: string): Promise<string> {
     try {
       // Validate prerequisites
-      const secretKey = await CryptoEngine.validateEncryptionPrerequisites(
+      const secretKey = await CryptoEngineFacade.Encryption.validateEncryptionPrerequisites(
         value,
         secretKeyVariable,
       );
 
       // Generate encryption components (returns Web Crypto types)
       const { salt, iv, encryptionKey, hmacKey } =
-        await CryptoEngine.generateEncryptionComponents(secretKey);
+        await CryptoEngineFacade.Encryption.generateEncryptionComponents(secretKey);
 
       // Create encrypted payload using Web Crypto API
-      return await CryptoEngine.createEncryptedPayload(value, salt, iv, encryptionKey, hmacKey);
+      const { raw } = await CryptoEngineFacade.Encryption.createEncryptedPayload(
+        value,
+        salt,
+        iv,
+        encryptionKey,
+        hmacKey,
+      );
+
+      // Return only the formatted string (for env storage, CLI output, etc.)
+      return raw;
     } catch (error) {
       ErrorHandler.captureError(error, "encrypt", "Failed to encrypt with AES-GCM.");
       throw error;
@@ -41,25 +46,37 @@ export class CryptoService {
    * All key handling is now consistent with Web Crypto standards
    */
   public static async decrypt(encryptedData: string, secretKeyVariable: string): Promise<string> {
-    const resolvedSecretKey = await CryptoEngine.getSecretKeyFromEnvironment(secretKeyVariable);
-    CryptoEngine.validateSecretKey(resolvedSecretKey);
-    CryptoEngine.validateInputs(encryptedData, resolvedSecretKey, "decrypt");
+    const resolvedSecretKey =
+      await CryptoEngineFacade.Environment.getSecretKeyFromEnvironment(secretKeyVariable);
+    CryptoEngineFacade.Validation.validateSecretKey(resolvedSecretKey);
+    CryptoEngineFacade.Validation.validateInputs(encryptedData, resolvedSecretKey, "decrypt");
 
     try {
       // Parse and validate encrypted data format
-      const { salt, iv, cipherText, receivedHmac } = CryptoEngine.parseEncryptedData(encryptedData);
+      const { salt, iv, cipherText, receivedHmac } =
+        CryptoEngineFacade.Decryption.parseEncryptedData(encryptedData);
 
       // Derive keys using Argon2 (returns Web Crypto CryptoKey objects)
-      const { encryptionKey, hmacKey } = await CryptoEngine.deriveKeysWithArgon2(
+      const { encryptionKey, hmacKey } = await CryptoEngineFacade.Argon2.deriveKeysWithArgon2(
         resolvedSecretKey,
         salt,
       );
 
-      // Verify HMAC integrity using Web Crypto API
-      await CryptoEngine.verifyHMAC(salt, iv, cipherText, receivedHmac, hmacKey);
+      // Verify HMAC integrity
+      await CryptoEngineFacade.HMAC.verifyHMACIntegrity(
+        salt,
+        iv,
+        cipherText,
+        receivedHmac,
+        hmacKey,
+      );
 
       // Perform decryption using Web Crypto API
-      const decryptedBuffer = await CryptoEngine.performDecryption(iv, encryptionKey, cipherText);
+      const decryptedBuffer = await CryptoEngineFacade.Decryption.performDecryption(
+        iv,
+        encryptionKey,
+        cipherText,
+      );
 
       // Decode the decrypted buffer to string
       return new TextDecoder().decode(new Uint8Array(decryptedBuffer));
