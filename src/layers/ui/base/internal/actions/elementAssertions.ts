@@ -2,6 +2,7 @@ import { expect } from "@playwright/test";
 import type { Page, Locator } from "@playwright/test";
 import { ActionBase } from "./actionBase.js";
 import type { AssertionElementState, WaitForElementState } from "../types/actions.type.js";
+import ErrorHandler from "../../../../../utils/errorHandling/errorHandler.js";
 import logger from "../../../../../utils/logger/loggerManager.js";
 
 export class ElementAssertions extends ActionBase {
@@ -187,29 +188,72 @@ export class ElementAssertions extends ActionBase {
   }
 
   /**
-   * Waits for an element to reach a specified state.
+   * Waits for an element to be in a specified state.
    * @param element The Locator of the element to wait for.
    * @param callerMethodName The name of the method that called the action.
-   * @param state The desired state of the element: "attached", "detached", "visible", or "hidden".
+   * @param state The desired state of the element: "attached", "detached", "enabled", "disabled", "visible", or "hidden".
    * @param elementName Optional: the name of the element.
-   * @returns A promise that resolves with the result of the wait action if it succeeds, or rejects with the error if it fails.
-   * @example
-   * await waitForElementState(element, "waitForElementState", "visible", "button");
+   * @param options Optional: timeout for the waitForElementState action.
+   * @returns A promise that resolves if the verification succeeds, or rejects with an error if it fails.
    */
   async waitForElementState(
     element: Locator,
     callerMethodName: string,
     state: WaitForElementState,
     elementName?: string,
+    options?: { timeout?: number },
   ): Promise<void> {
     await this.performAction(
       async () => {
-        await element.waitFor({ state });
+        await element.waitFor({
+          state,
+          ...(options?.timeout !== undefined && { timeout: options.timeout }),
+        });
       },
       callerMethodName,
       `${elementName || "element"} is ${state}`,
       `Failed waiting for element ${elementName || "element"} to be ${state}`,
     );
+  }
+
+  /**
+   * Checks if an element reaches a specified state within the timeout period.
+   * @param element The Locator of the element to wait for.
+   * @param callerMethodName The name of the method that called the action.
+   * @param state The desired state of the element: "attached", "detached", "enabled", "disabled", "visible", or "hidden".
+   * @param elementName Optional: the name of the element.
+   * @param options Optional: timeout for the waitForElementState action.
+   * @returns A promise that resolves with true if the verification succeeds, or false if it fails.
+   */
+  async isElementStateReached(
+    element: Locator,
+    callerMethodName: string,
+    state: WaitForElementState,
+    elementName?: string,
+    options?: { timeout?: number },
+  ): Promise<boolean> {
+    try {
+      await this.performAction(
+        async () => {
+          await element.waitFor({
+            state,
+            ...(options?.timeout !== undefined && { timeout: options.timeout }),
+          });
+        },
+        callerMethodName,
+        `${elementName || "element"} is ${state}`,
+        `Failed waiting for element ${elementName || "element"} to be ${state}`,
+      );
+
+      return true;
+    } catch (error) {
+      ErrorHandler.captureError(
+        error,
+        callerMethodName,
+        `waitForElementState failed for ${elementName || "element"}`,
+      );
+      return false;
+    }
   }
 
   /**

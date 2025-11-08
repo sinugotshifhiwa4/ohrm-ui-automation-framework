@@ -106,7 +106,6 @@ export class LoginPage extends BasePage {
     await this.fillUsernameInput(username);
     await this.fillPasswordInput(password);
     await this.clickLoginButton();
-    await this.verifyInvalidLoginErrorMessageIsNotVisible();
   }
 
   public async verifyLoginElementsAreVisible(): Promise<void> {

@@ -27,7 +27,7 @@ export default class ErrorHandler {
 
   private static logStructuredError(details: ErrorDetails): void {
     try {
-      logger.error(details);
+      logger.error(JSON.stringify(details, null, 2));
     } catch {
       console.error("Error:", details);
     }

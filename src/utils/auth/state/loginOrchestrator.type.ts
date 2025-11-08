@@ -6,3 +6,7 @@ export type PortalLoginResult = {
   /** True if the authentication state was successfully persisted */
   authenticationStateSaved: boolean;
 };
+
+export interface LoginOptions {
+  saveAuthenticationState?: boolean;
+}

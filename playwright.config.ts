@@ -50,7 +50,7 @@ export default defineConfig({
    */
   reporter: isCI
     ? [["blob", { outputDir: "blob-report", alwaysReport: true }]]
-    : [["html", { open: "never" }], ["dot"]],
+    : [["html", { open: "never" }], ["line"]],
   grep:
     typeof process.env.PLAYWRIGHT_GREP === "string"
       ? new RegExp(process.env.PLAYWRIGHT_GREP)
