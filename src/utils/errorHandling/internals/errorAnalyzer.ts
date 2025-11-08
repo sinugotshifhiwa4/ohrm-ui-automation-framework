@@ -1,3 +1,4 @@
+// ErrorAnalyzer.ts
 import DataSanitizer from "../../sanitization/dataSanitizer.js";
 import { ErrorCacheManager } from "./errorCacheManager.js";
 import type { ErrorDetails, MatcherResult, MatcherError } from "../type/error-handler.types.js";
@@ -19,8 +20,11 @@ export default class ErrorAnalyzer {
       message,
       timestamp: new Date().toISOString(),
       environment: process.env.ENV || "dev",
-      ...additionalDetails, // Includes stack, errorType, and any additional props
+      ...additionalDetails,
     };
+
+    // Explicitly remove matcherResult if it somehow made it through
+    delete details.matcherResult;
 
     return details;
   }
@@ -54,7 +58,7 @@ export default class ErrorAnalyzer {
     const errorType = this.getErrorType(error);
     if (errorType) details.errorType = errorType;
 
-    // Check for matcher error (Playwright/Jest)
+    // Check for matcher error (Playwright/Jest) - extract fields but don't include raw matcherResult
     if (this.isMatcherError(error)) {
       Object.assign(details, this.extractMatcherDetails(error.matcherResult));
     }
@@ -62,20 +66,14 @@ export default class ErrorAnalyzer {
     // Use DataSanitizer to get all other properties
     const sanitizedError = DataSanitizer.sanitizeErrorObject(error);
 
-    // Merge sanitized properties, avoiding duplicates
+    // Skip these keys that we either already extracted or don't want
+    const skipKeys = new Set(["name", "stack", "message", "constructor", "matcherResult"]);
+
+    // Merge sanitized properties, avoiding duplicates and unwanted keys
     for (const [key, value] of Object.entries(sanitizedError)) {
-      // Skip if already extracted or meaningless
-      if (
-        key in details ||
-        key === "name" ||
-        key === "stack" ||
-        key === "message" ||
-        key === "constructor" ||
-        value == null
-      ) {
-        continue;
+      if (!skipKeys.has(key) && !(key in details) && value != null) {
+        details[key] = value;
       }
-      details[key] = value;
     }
 
     return details;
@@ -83,7 +81,8 @@ export default class ErrorAnalyzer {
 
   private static getStackTrace(error: Record<string, unknown>): string | undefined {
     if ("stack" in error && typeof error.stack === "string") {
-      return error.stack.substring(0, 2000);
+      const sanitized = ErrorCacheManager.getSanitizedMessage(error.stack);
+      return sanitized.substring(0, 2000);
     }
     return undefined;
   }
@@ -105,9 +104,9 @@ export default class ErrorAnalyzer {
   private static extractMatcherDetails(matcher: MatcherResult): Record<string, unknown> {
     const details: Record<string, unknown> = {
       pass: matcher.pass,
+      matcherName: matcher.name,
     };
 
-    if (matcher.name) details.matcherName = matcher.name;
     if (matcher.expected !== undefined) details.expected = matcher.expected;
     if (matcher.actual !== undefined) details.received = matcher.actual;
     else if (matcher.received !== undefined) details.received = matcher.received;
